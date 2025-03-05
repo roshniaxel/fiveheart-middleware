@@ -3,17 +3,32 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
+// Define the type for the table data
+interface PurchaseLog {
+  id: number;
+  name: string; // Modify based on your actual table fields
+  // Add other necessary fields
+}
+
 export default function Home() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<PurchaseLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, error } = await supabase.from("your_table_name").select("*");
-      if (error) console.error("Error fetching data:", error);
-      else setData(data);
+      const { data, error } = await supabase
+        .from("purchase_log")
+        .select("*")
+        .returns<PurchaseLog[]>(); // Correct way to type the response
+    
+      if (error) {
+        console.error("Error fetching data:", error);
+      } else {
+        setData(data ?? []); // Ensure it's not null
+      }
       setLoading(false);
     };
+    
 
     fetchData();
   }, []);
