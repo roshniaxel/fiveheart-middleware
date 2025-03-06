@@ -2,48 +2,124 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
+import "./globals.css";
 
-// Define the type for the table data
 interface PurchaseLog {
   id: number;
-  name: string; // Modify based on your actual table fields
-  // Add other necessary fields
+  created_at: string;
+  user_log: {
+    title: string;
+    user_email: string;
+    payment_method: string;
+    total_amount: number;
+    purchased_courses: { course_id: string; title: string; price: number }[];
+  } | null;
+}
+
+interface ParsedPurchaseLog {
+  id: number;
+  title: string;
+  user_email: string;
+  payment_method: string;
+  total_amount: number;
+  purchased_courses: { title: string; price: number }[];
+  created_at: string;
 }
 
 export default function Home() {
-  const [data, setData] = useState<PurchaseLog[]>([]);
+  const [data, setData] = useState<ParsedPurchaseLog[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data, error } = await supabase
-        .from("purchase_log")
-        .select("*")
-        .returns<PurchaseLog[]>(); // Correct way to type the response
-    
-      if (error) {
-        console.error("Error fetching data:", error);
-      } else {
-        setData(data ?? []); // Ensure it's not null
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.from("purchase_log").select("*");
+
+        if (error) {
+          console.error("Supabase Fetch Error:", error);
+          return;
+        }
+
+        console.log("Fetched Raw Data:", JSON.stringify(data, null, 2));
+
+        const parsedData = data.map((item: any) => {
+          const userLog = item["User Log"]; // Case-sensitive fix
+
+          return {
+            id: item.id,
+            title: userLog?.title || "N/A",
+            user_email: userLog?.user_email || "N/A",
+            payment_method: userLog?.payment_method || "N/A",
+            total_amount: userLog?.total_amount || 0,
+            purchased_courses: userLog?.purchased_courses || [],
+            created_at: item.created_at,
+          };
+        });
+
+        console.log("Parsed Data:", parsedData);
+        setData(parsedData);
+      } catch (err) {
+        console.error("Unexpected Error:", err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    
 
     fetchData();
   }, []);
 
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold">Supabase Data</h1>
+    <main className="table-container">
+      <h1 className="text-3xl font-bold mb-6 text-center">📜 FiveHeart Purchase Logs</h1>
+
       {loading ? (
-        <p>Loading...</p>
+        <p className="text-xl font-semibold text-gray-700">Loading...</p>
       ) : (
-        <ul>
-          {data.map((item) => (
-            <li key={item.id}>{item.name}</li> // Adjust fields as needed
-          ))}
-        </ul>
+        <div className="table-container">
+          <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">
+            🛒 Purchase Transactions
+          </h2>
+
+          <table className="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>User Email</th>
+                <th>Payment Method</th>
+                <th>Total Amount</th>
+                <th>Courses</th>
+                <th>Created At</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((item) => (
+                <tr key={item.id}>
+                  <td>{item.id}</td>
+                  <td>{item.title}</td>
+                  <td>{item.user_email}</td>
+                  <td>{item.payment_method}</td>
+                  <td className="text-green-600 font-semibold">${item.total_amount.toLocaleString()}</td>
+                  <td>
+                    {item.purchased_courses.length > 0 ? (
+                      <ul>
+                        {item.purchased_courses.map((course, i) => (
+                          <li key={i} className="text-blue-700 font-medium">
+                            {course.title}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="text-gray-500">N/A</span>
+                    )}
+                  </td>
+                  <td>{new Date(item.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   );
