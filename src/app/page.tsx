@@ -84,7 +84,7 @@ export default function Home() {
         <p className="text-xl font-semibold text-gray-700">Loading...</p>
       ) : (
         <div className="table-container">
-          <h2 className="text-2xl font-semibold text-gray-800 text-center mb-4">
+          <h2 className="text-2xl font-semibold text-center mb-4">
             🛒 Purchase Transactions
           </h2>
 
