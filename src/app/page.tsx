@@ -4,15 +4,21 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabaseClient";
 import "./globals.css";
 
-interface PurchaseLog {
+interface PurchasedCourse {
+  course_id: string;
+  title: string;
+  price: number;
+}
+
+interface SupabasePurchaseLog {
   id: number;
   created_at: string;
-  user_log: {
+  "User Log": {
     title: string;
     user_email: string;
     payment_method: string;
     total_amount: number;
-    purchased_courses: { course_id: string; title: string; price: number }[];
+    purchased_courses: PurchasedCourse[];
   } | null;
 }
 
@@ -22,7 +28,7 @@ interface ParsedPurchaseLog {
   user_email: string;
   payment_method: string;
   total_amount: number;
-  purchased_courses: { title: string; price: number }[];
+  purchased_courses: PurchasedCourse[];
   created_at: string;
 }
 
@@ -43,8 +49,9 @@ export default function Home() {
 
         console.log("Fetched Raw Data:", JSON.stringify(data, null, 2));
 
-        const parsedData = data.map((item: any) => {
-          const userLog = item["User Log"]; // Case-sensitive fix
+        // Explicitly type `item`
+        const parsedData = (data as SupabasePurchaseLog[]).map((item) => {
+          const userLog = item["User Log"]; // Ensure case sensitivity
 
           return {
             id: item.id,
@@ -100,7 +107,9 @@ export default function Home() {
                   <td>{item.title}</td>
                   <td>{item.user_email}</td>
                   <td>{item.payment_method}</td>
-                  <td className="text-green-600 font-semibold">${item.total_amount.toLocaleString()}</td>
+                  <td className="text-green-600 font-semibold">
+                    ${item.total_amount.toLocaleString()}
+                  </td>
                   <td>
                     {item.purchased_courses.length > 0 ? (
                       <ul>
