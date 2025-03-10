@@ -13,9 +13,9 @@ interface PurchasedCourse {
 interface SupabasePurchaseLog {
   id: number;
   created_at: string;
-  site_url: string;
-  user_log?: {
+  "User Log": {
     title: string;
+    site_url?: string; // ✅ Added `site_url`
     user_email: string;
     payment_method: string;
     total_amount: number;
@@ -31,7 +31,7 @@ interface ParsedPurchaseLog {
   total_amount: number;
   purchased_courses: PurchasedCourse[];
   created_at: string;
-  site_url: string;
+  site_url: string; // ✅ Added `site_url`
 }
 
 export default function Home() {
@@ -42,24 +42,17 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data: rawData, error } = await supabase
-          .from("purchase_log")
-          .select("id, created_at, site_url, user_log");
+        const { data, error } = await supabase.from("purchase_log").select("*");
 
         if (error) {
           console.error("Supabase Fetch Error:", error);
           return;
         }
 
-        console.log("Fetched Raw Data:", JSON.stringify(rawData, null, 2));
+        console.log("Fetched Raw Data:", JSON.stringify(data, null, 2));
 
-        if (!Array.isArray(rawData)) {
-          console.error("Unexpected response format", rawData);
-          return;
-        }
-
-        const parsedData = rawData.map((item: SupabasePurchaseLog) => {
-          const userLog = item.user_log;
+        const parsedData = (data as SupabasePurchaseLog[]).map((item) => {
+          const userLog = item["User Log"];
 
           return {
             id: item.id,
@@ -69,7 +62,7 @@ export default function Home() {
             total_amount: userLog?.total_amount || 0,
             purchased_courses: userLog?.purchased_courses || [],
             created_at: item.created_at,
-            site_url: item.site_url || "N/A",
+            site_url: userLog?.site_url || "N/A", // ✅ Extracted `site_url`
           };
         });
 
