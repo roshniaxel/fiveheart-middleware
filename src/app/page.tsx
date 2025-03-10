@@ -13,8 +13,8 @@ interface PurchasedCourse {
 interface SupabasePurchaseLog {
   id: number;
   created_at: string;
-  site_url: string; // Added site_url
-  "User Log": {
+  site_url: string;
+  user_log?: {
     title: string;
     user_email: string;
     payment_method: string;
@@ -31,7 +31,7 @@ interface ParsedPurchaseLog {
   total_amount: number;
   purchased_courses: PurchasedCourse[];
   created_at: string;
-  site_url: string; // Added site_url
+  site_url: string;
 }
 
 export default function Home() {
@@ -42,20 +42,24 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
+        const { data: rawData, error } = await supabase
           .from("purchase_log")
-          .select("id, created_at, site_url, User Log");
+          .select("id, created_at, site_url, user_log");
 
         if (error) {
           console.error("Supabase Fetch Error:", error);
           return;
         }
 
-        console.log("Fetched Raw Data:", JSON.stringify(data, null, 2));
+        console.log("Fetched Raw Data:", JSON.stringify(rawData, null, 2));
 
-        // Explicitly type `item`
-        const parsedData = (data as SupabasePurchaseLog[]).map((item) => {
-          const userLog = item["User Log"];
+        if (!Array.isArray(rawData)) {
+          console.error("Unexpected response format", rawData);
+          return;
+        }
+
+        const parsedData = rawData.map((item: SupabasePurchaseLog) => {
+          const userLog = item.user_log;
 
           return {
             id: item.id,
@@ -65,7 +69,7 @@ export default function Home() {
             total_amount: userLog?.total_amount || 0,
             purchased_courses: userLog?.purchased_courses || [],
             created_at: item.created_at,
-            site_url: item.site_url || "N/A", // Assign site_url
+            site_url: item.site_url || "N/A",
           };
         });
 
@@ -89,9 +93,7 @@ export default function Home() {
         <p className="text-xl font-semibold text-gray-700">Loading...</p>
       ) : (
         <div className="table-container">
-          <h2 className="text-2xl font-semibold text-center mb-4">
-            🛒 Purchase Transactions
-          </h2>
+          <h2 className="text-2xl font-semibold text-center mb-4">🛒 Purchase Transactions</h2>
 
           <table className="table">
             <thead>
@@ -102,7 +104,7 @@ export default function Home() {
                 <th>Payment Method</th>
                 <th>Total Amount</th>
                 <th>Courses</th>
-                <th>Site URL</th> {/* New column for Site URL */}
+                <th>Site URL</th>
                 <th>Created At</th>
               </tr>
             </thead>
