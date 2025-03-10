@@ -13,6 +13,7 @@ interface PurchasedCourse {
 interface SupabasePurchaseLog {
   id: number;
   created_at: string;
+  site_url: string; // Added site_url
   "User Log": {
     title: string;
     user_email: string;
@@ -30,6 +31,7 @@ interface ParsedPurchaseLog {
   total_amount: number;
   purchased_courses: PurchasedCourse[];
   created_at: string;
+  site_url: string; // Added site_url
 }
 
 export default function Home() {
@@ -40,7 +42,9 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase.from("purchase_log").select("*");
+        const { data, error } = await supabase
+          .from("purchase_log")
+          .select("id, created_at, site_url, User Log");
 
         if (error) {
           console.error("Supabase Fetch Error:", error);
@@ -51,7 +55,7 @@ export default function Home() {
 
         // Explicitly type `item`
         const parsedData = (data as SupabasePurchaseLog[]).map((item) => {
-          const userLog = item["User Log"]; // Ensure case sensitivity
+          const userLog = item["User Log"];
 
           return {
             id: item.id,
@@ -61,6 +65,7 @@ export default function Home() {
             total_amount: userLog?.total_amount || 0,
             purchased_courses: userLog?.purchased_courses || [],
             created_at: item.created_at,
+            site_url: item.site_url || "N/A", // Assign site_url
           };
         });
 
@@ -97,6 +102,7 @@ export default function Home() {
                 <th>Payment Method</th>
                 <th>Total Amount</th>
                 <th>Courses</th>
+                <th>Site URL</th> {/* New column for Site URL */}
                 <th>Created At</th>
               </tr>
             </thead>
@@ -122,6 +128,16 @@ export default function Home() {
                     ) : (
                       <span className="text-gray-500">N/A</span>
                     )}
+                  </td>
+                  <td>
+                    <a
+                      href={item.site_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline"
+                    >
+                      {item.site_url}
+                    </a>
                   </td>
                   <td>{new Date(item.created_at).toLocaleString()}</td>
                 </tr>
